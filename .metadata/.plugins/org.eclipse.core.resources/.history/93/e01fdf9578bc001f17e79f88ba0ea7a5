@@ -1,0 +1,26 @@
+package br.com.recargapay.digitalwallet.entities;
+
+import java.math.BigDecimal;
+
+import jakarta.persistence.*;
+import lombok.Data;
+
+@Entity
+@Table(name = "wallets")
+@Data
+public class Wallet {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
+	@Version
+	private Long version; // Para controle de concorrência otimista
+
+	@Column(nullable = false, unique = true)
+	private String owner;
+
+	@Column(nullable = false)
+	private BigDecimal balance = BigDecimal.ZERO;
+
+}

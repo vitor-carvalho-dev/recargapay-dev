@@ -1,0 +1,65 @@
+package br.com.recargapay.digitalwallet.service;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import br.com.recargapay.digitalwallet.dto.WalletRequestDTO;
+import br.com.recargapay.digitalwallet.entities.Transaction;
+import br.com.recargapay.digitalwallet.entities.Wallet;
+import br.com.recargapay.digitalwallet.repository.TransactionRepository;
+import br.com.recargapay.digitalwallet.repository.WalletRepository;
+
+@Service
+public class WalletService {
+	@Autowired
+	private WalletRepository walletRepository;
+
+	@Autowired
+	private TransactionRepository transactionRepository;
+
+	public Wallet createWallet(WalletRequestDTO request) {
+
+		// Verificar se o usuário já possui uma carteira
+
+		if (walletRepository.existsByOwner(request.getOwner())) {
+			throw new IllegalArgumentException("Wallet already exists for this user.");
+		}
+
+		// Criar nova carteira
+		Wallet wallet = new Wallet();
+		wallet.setOwner(request.getOwner());
+		wallet.setBalance(BigDecimal.ZERO);
+
+		// Salvar no banco de dados
+		return walletRepository.save(wallet);
+	}
+
+	// Método para recuperar o saldo da carteira pelo ID
+	public Wallet getWalletBalance(Long walletId) {
+		return walletRepository.findById(walletId)
+				.orElseThrow(() -> new IllegalArgumentException("Wallet not found with ID: " + walletId));
+	}
+
+	// Método para recuperar saldo histórico
+	public BigDecimal getHistoricalBalance(Long walletId, LocalDateTime timestamp) {
+		Wallet wallet = walletRepository.findById(walletId)
+				.orElseThrow(() -> new IllegalArgumentException("Wallet not found with ID: " + walletId));
+
+		List<Transaction> transactions = transactionRepository.findByWalletAndTimestampBeforeOrderByTimestampAsc(wallet,
+				timestamp);
+
+		// Calcular saldo acumulado até o timestamp
+		return transactions.stream().map(transaction -> {
+			if (transaction.getType().equals("DEPOSIT") || transaction.getType().equals("TRANSFER")) {
+				return transaction.getAmount();
+			} else {
+				return transaction.getAmount().negate(); // Saques diminuem o saldo
+			}
+		}).reduce(BigDecimal.ZERO, BigDecimal::add);
+	}
+
+}

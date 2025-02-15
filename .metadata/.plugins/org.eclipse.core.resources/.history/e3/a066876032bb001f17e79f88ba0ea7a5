@@ -1,0 +1,7 @@
+package br.com.recargapay.digitalwallet.repository;
+
+// aqui irei acessar o banco de dados
+
+public class WalletRepository {
+
+}

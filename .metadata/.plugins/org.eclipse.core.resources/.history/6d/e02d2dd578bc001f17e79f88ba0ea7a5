@@ -1,0 +1,11 @@
+package br.com.recargapay.digitalwallet.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import br.com.recargapay.digitalwallet.entities.Wallet;
+
+public interface WalletRepository extends JpaRepository<Wallet, Long>{
+	
+	boolean existsByOwner(String owner);
+
+}

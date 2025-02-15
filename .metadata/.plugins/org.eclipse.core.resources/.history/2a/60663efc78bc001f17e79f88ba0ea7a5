@@ -1,0 +1,23 @@
+package br.com.recargapay.digitalwallet.repository;
+
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import br.com.recargapay.digitalwallet.entities.Wallet;
+import jakarta.persistence.LockModeType;
+
+public interface WalletRepository extends JpaRepository<Wallet, Long>{
+	
+	// Verificar se uma carteira com o mesmo owner já existe. *boolean
+	boolean existsByOwner(String owner);
+	
+	// Buscar carteira com Lock Pessimista para evitar problemas de concorrência
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT w FROM Wallet w WHERE w.owner = :owner")
+    Optional<Wallet> findByOwnerWithLock(@Param("owner") String owner);
+
+}

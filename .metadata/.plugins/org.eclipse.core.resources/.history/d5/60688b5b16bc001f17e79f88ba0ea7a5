@@ -1,0 +1,32 @@
+package br.com.recargapay.digitalwallet.service;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalTime;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import br.com.recargapay.digitalwallet.entities.Transaction;
+import br.com.recargapay.digitalwallet.entities.Wallet;
+import br.com.recargapay.digitalwallet.enums.TransactionType;
+import br.com.recargapay.digitalwallet.repository.TransactionRepository;
+
+@Service
+public class TransactionService {
+
+    @Autowired
+    private TransactionRepository transactionRepository;
+
+    // Método para salvar uma nova transação
+    public Transaction saveTransaction(Wallet wallet, BigDecimal amount, TransactionType type) {
+        Transaction transaction = new Transaction();
+        transaction.setWallet(wallet);
+        transaction.setAmount(amount);
+        transaction.setType(type);
+        transaction.setDate(LocalDate.now()); // Salva a data atual
+        transaction.setTime(LocalTime.now()); // Salva a hora atual
+
+        return transactionRepository.save(transaction);
+    }
+}

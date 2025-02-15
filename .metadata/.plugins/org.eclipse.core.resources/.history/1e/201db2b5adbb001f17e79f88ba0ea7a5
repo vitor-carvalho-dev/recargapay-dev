@@ -1,0 +1,33 @@
+package br.com.recargapay.digitalwallet.service;
+
+import java.math.BigDecimal;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import br.com.recargapay.digitalwallet.dto.WalletRequestDTO;
+import br.com.recargapay.digitalwallet.entities.Wallet;
+import br.com.recargapay.digitalwallet.repository.WalletRepository;
+
+@Service
+public class WalletService {
+	@Autowired
+    private WalletRepository walletRepository;
+	
+	public Wallet createWallet(WalletRequestDTO request) {
+		
+		// Verificar se o usuário já possui uma carteira
+		
+		if (walletRepository.existsByOwner(request.getOwner())) {
+			throw new IllegalArgumentException("Wallet already exists for this user.");
+		}
+		
+		// Criar nova carteira
+        Wallet wallet = new Wallet();
+        wallet.setOwner(request.getOwner());
+        wallet.setBalance(BigDecimal.ZERO);
+
+        // Salvar no banco de dados
+        return walletRepository.save(wallet);
+	}
+}

@@ -1,0 +1,17 @@
+package br.com.recargapay.digitalwallet.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import br.com.recargapay.digitalwallet.entities.Transaction;
+import br.com.recargapay.digitalwallet.entities.Wallet;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
+
+// repositório para buscar transações até um determinado timestamp
+
+public interface TransactionRepository extends JpaRepository<Transaction, Long> {
+    List<Transaction> findByWalletAndTimestampBeforeOrderByTimestampAsc(Wallet wallet, LocalDateTime timestamp);
+}

@@ -1,0 +1,91 @@
+package br.com.recargapay.digitalwallet.service;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import br.com.recargapay.digitalwallet.dto.WalletRequestDTO;
+import br.com.recargapay.digitalwallet.entities.Transaction;
+import br.com.recargapay.digitalwallet.entities.Wallet;
+import br.com.recargapay.digitalwallet.enums.TransactionType;
+import br.com.recargapay.digitalwallet.repository.TransactionRepository;
+import br.com.recargapay.digitalwallet.repository.WalletRepository;
+
+@Service
+public class WalletService {
+	@Autowired
+	private WalletRepository walletRepository;
+
+	@Autowired
+	private TransactionRepository transactionRepository;
+
+	@Autowired
+	private TransactionService transactionService;
+
+	public Wallet createWallet(WalletRequestDTO request) {
+
+		// Verificar se o usuário já possui uma carteira
+
+		if (walletRepository.existsByOwner(request.getOwner())) {
+			throw new IllegalArgumentException("Wallet already exists for this user.");
+		}
+
+		// Criar nova carteira
+		Wallet wallet = new Wallet();
+		wallet.setOwner(request.getOwner());
+		wallet.setBalance(BigDecimal.ZERO);
+
+		// Salvar no banco de dados
+		return walletRepository.save(wallet);
+	}
+
+	// Método para recuperar o saldo da carteira pelo ID
+	public Wallet getWalletBalance(Long walletId) {
+		return walletRepository.findById(walletId)
+				.orElseThrow(() -> new IllegalArgumentException("Wallet not found with ID: " + walletId));
+	}
+
+	// Método para recuperar saldo histórico
+	public BigDecimal getHistoricalBalance(Long walletId, LocalDateTime timestamp) {
+		// Buscar a carteira pelo ID
+		Wallet wallet = walletRepository.findById(walletId)
+				.orElseThrow(() -> new IllegalArgumentException("Wallet not found with ID: " + walletId));
+
+		// Buscar todas as transações até o timestamp fornecido
+		List<Transaction> transactions = transactionRepository.findByWalletAndTimestampBeforeOrderByTimestampAsc(wallet,
+				timestamp);
+
+		// Calcular o saldo acumulado a partir das transações
+		return transactions.stream().map(transaction -> {
+			switch (transaction.getType()) {
+			case DEPOSIT:
+			case TRANSFER:
+				return transaction.getAmount();
+			case WITHDRAW:
+				return transaction.getAmount().negate();
+			default:
+				throw new IllegalStateException("Unknown transaction type: " + transaction.getType());
+			}
+		}).reduce(BigDecimal.ZERO, BigDecimal::add);
+	}
+
+	// Método para realizar um depósito
+	public Wallet depositFunds(Long walletId, BigDecimal amount) {
+		Wallet wallet = walletRepository.findById(walletId)
+				.orElseThrow(() -> new IllegalArgumentException("Wallet not found with ID: " + walletId));
+
+		// Atualiza o saldo da carteira
+		wallet.setBalance(wallet.getBalance().add(amount));
+
+		// Salva a transação no banco de dados
+		transactionService.saveTransaction(wallet, amount, TransactionType.DEPOSIT);
+
+		return walletRepository.save(wallet);
+	}
+
+}
